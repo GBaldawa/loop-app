@@ -1,5 +1,4 @@
-/* Additional app-specific styles */
-
+/* Existing animation */
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -22,7 +21,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid #928fd5;
   outline-offset: 2px;
 }
 
@@ -31,7 +30,65 @@ textarea:focus-visible {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
+/* Make sections breathe more */
+section,
+div[class*="container"] {
+  padding: 20px 24px;
+}
+
+/* Space out cards/lists */
+.card-hover {
+  padding: 18px 20px;
+  margin: 14px 0;
+  border-radius: 12px;
+}
+
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Notification cards */
+.notification-card {
+  padding: 16px 20px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+}
+
+/* Buttons */
+button {
+  padding: 10px 18px;
+  border-radius: 10px;
+}
+
+/* Navbar */
+.navbar {
+  padding: 12px 0;
+}
+
+/* Text and icon spacing */
+.icon-text {
+  margin-left: 6px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 10px;
+}
+
+p {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+/* Lists / request items */
+.request-item {
+  padding: 14px 18px;
+  margin: 10px 0;
+  border-radius: 10px;
+}
+
+/* Input spacing */
+input, textarea {
+  padding: 10px 14px;
+  margin-bottom: 10px;
 }
