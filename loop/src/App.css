@@ -1,63 +1,37 @@
-.app-container {
-  max-width: 28rem;
-  margin: 0 auto;
-  background-color: white;
-  min-height: 100vh;
-  position: relative;
+/* Additional app-specific styles */
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.page-content {
-  padding-bottom: 5rem;
-  background-color: #f9fafb;
-  min-height: 100vh;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.card {
-  background: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  padding: 1rem;
+/* Smooth transitions */
+button {
+  transition: all 0.2s ease-in-out;
 }
 
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
+/* Focus states for accessibility */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
 }
 
-.btn-primary:hover {
-  background-color: #2563eb;
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.btn-secondary {
-  border: 2px solid #e5e7eb;
-  color: #374151;
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  background: white;
-  cursor: pointer;
-  transition: background-color 0.2s;
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-.btn-secondary:hover {
-  background-color: #f9fafb;
-}
-
-.input-field {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  outline: none;
-}
-/* 
-.input-field:focus {
-  ring: 2px;
-  ring-color: #3b82f6;
-} */
