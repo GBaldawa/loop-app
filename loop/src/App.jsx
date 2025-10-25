@@ -1,48 +1,186 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Bell, Plus, User, Home, Search, Star, Clock, CheckCircle, XCircle, MessageCircle } from 'lucide-react';
 
+// Firebase imports
+import { auth, db } from './config/firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged 
+} from 'firebase/auth';
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  onSnapshot,
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  orderBy,
+  limit
+} from 'firebase/firestore';
+
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
   const [user, setUser] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [requests, setRequests] = useState([
-    { id: 1, user: 'Sarah K.', item: 'Ladder', distance: '0.3 mi', rating: 4.8, credits: 15, time: '2h ago', status: 'pending' },
-    { id: 2, user: 'Mike T.', item: 'Power Drill', distance: '0.5 mi', rating: 4.9, credits: 25, time: '4h ago', status: 'pending' },
-    { id: 3, user: 'Emma L.', item: 'Camping Tent', distance: '0.8 mi', rating: 4.7, credits: 20, time: '5h ago', status: 'pending' }
-  ]);
-  const [myRequests, setMyRequests] = useState([]);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Real-time data from Firebase
+  const [requests, setRequests] = useState([]);
   const [activeLoans, setActiveLoans] = useState([]);
+  const [notifications, setNotifications] = useState([]);
 
+  // Listen for auth state changes
   useEffect(() => {
-    const mockUser = {
-      name: 'Alex Johnson',
-      credits: 42,
-      rating: 4.8,
-      loansCompleted: 23
-    };
-    setUser(mockUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        // Load user data from Firestore
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          setUserData(userDoc.data());
+        } else {
+          // Create user document if it doesn't exist
+          const newUserData = {
+            name: firebaseUser.email.split('@')[0],
+            email: firebaseUser.email,
+            credits: 10,
+            rating: 5.0,
+            loansCompleted: 0,
+            createdAt: serverTimestamp()
+          };
+          await setDoc(userDocRef, newUserData);
+          setUserData(newUserData);
+        }
+      } else {
+        setUser(null);
+        setUserData(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
+
+  // Listen for real-time requests (nearby pending requests)
+  useEffect(() => {
+    if (!user) return;
+
+    const requestsQuery = query(
+      collection(db, 'requests'),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+      const requestsList = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        // Don't show your own requests
+        if (data.requesterId !== user.uid) {
+          requestsList.push({
+            id: doc.id,
+            ...data
+          });
+        }
+      });
+      setRequests(requestsList);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Listen for active loans where you're the loaner
+  useEffect(() => {
+    if (!user) return;
+
+    const loansQuery = query(
+      collection(db, 'loans'),
+      where('loanerId', '==', user.uid),
+      where('status', 'in', ['accepted', 'in-progress'])
+    );
+
+    const unsubscribe = onSnapshot(loansQuery, (snapshot) => {
+      const loansList = [];
+      snapshot.forEach((doc) => {
+        loansList.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      setActiveLoans(loansList);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Listen for notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const notificationsQuery = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid),
+      where('read', '==', false),
+      orderBy('sentAt', 'desc'),
+      limit(20)
+    );
+
+    const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
+      const notifsList = [];
+      snapshot.forEach((doc) => {
+        notifsList.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      setNotifications(notifsList);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const LoginPage = () => {
     const [isSignUp, setIsSignUp] = useState(false);
     const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+    const [error, setError] = useState('');
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+      setError('');
+      
       if (!formData.email || !formData.password) {
-        alert('Please fill in all fields');
+        setError('Please fill in all fields');
         return;
       }
-      if (isSignUp && !formData.name) {
-        alert('Please enter your name');
-        return;
+
+      try {
+        if (isSignUp) {
+          // Sign up
+          const userCredential = await createUserWithEmailAndPassword(
+            auth, 
+            formData.email, 
+            formData.password
+          );
+          
+          // User document will be created in onAuthStateChanged
+          console.log('User created:', userCredential.user.uid);
+        } else {
+          // Log in
+          await signInWithEmailAndPassword(auth, formData.email, formData.password);
+          console.log('User logged in');
+        }
+      } catch (err) {
+        console.error('Auth error:', err);
+        setError(err.message);
       }
-      setUser({
-        name: formData.name || 'Alex Johnson',
-        credits: 10,
-        rating: 5.0,
-        loansCompleted: 0
-      });
-      setCurrentPage('home');
     };
 
     return (
@@ -52,6 +190,12 @@ const App = () => {
             <h1 className="text-4xl font-bold text-gray-800 mb-2">Loop</h1>
             <p className="text-gray-500">Share. Borrow. Connect.</p>
           </div>
+          
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
           
           <div className="space-y-4">
             {isSignUp && (
@@ -142,17 +286,36 @@ const App = () => {
   };
 
   const HomePage = () => {
-    const handleAcceptRequest = (id) => {
-      const request = requests.find(r => r.id === id);
+    const handleAcceptRequest = async (requestId) => {
+      const request = requests.find(r => r.id === requestId);
       if (!request) return;
-      
-      setActiveLoans([...activeLoans, { ...request, status: 'accepted', acceptedAt: new Date() }]);
-      setRequests(requests.filter(r => r.id !== id));
-      setNotifications([...notifications, { 
-        id: Date.now(), 
-        message: `You accepted ${request.user}'s request for ${request.item}`,
-        time: 'Just now'
-      }]);
+
+      try {
+        // Create loan document
+        await addDoc(collection(db, 'loans'), {
+          requestId: requestId,
+          itemId: null, // You'd get this from item selection
+          loanerId: user.uid,
+          borrowerId: request.requesterId,
+          itemName: request.itemName,
+          status: 'accepted',
+          startTime: serverTimestamp(),
+          estimatedReturnTime: request.estimatedReturnTime,
+          createdAt: serverTimestamp()
+        });
+
+        // Update request status
+        await updateDoc(doc(db, 'requests', requestId), {
+          status: 'accepted',
+          acceptedBy: user.uid,
+          acceptedAt: serverTimestamp()
+        });
+
+        console.log('Request accepted successfully!');
+      } catch (error) {
+        console.error('Error accepting request:', error);
+        alert('Failed to accept request. Please try again.');
+      }
     };
 
     return (
@@ -161,25 +324,25 @@ const App = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Welcome back!</h2>
-              <p className="text-gray-500">{user?.name}</p>
+              <p className="text-gray-500">{userData?.name}</p>
             </div>
             <div className="text-right">
               <div className="bg-blue-50 rounded-2xl px-4 py-2">
                 <p className="text-xs text-gray-600">Credits</p>
-                <p className="text-2xl font-bold text-blue-500">{user?.credits}</p>
+                <p className="text-2xl font-bold text-blue-500">{userData?.credits || 0}</p>
               </div>
             </div>
           </div>
           
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-gray-50 rounded-2xl p-3 text-center">
-              <p className="text-2xl font-bold text-gray-800">{user?.loansCompleted}</p>
+              <p className="text-2xl font-bold text-gray-800">{userData?.loansCompleted || 0}</p>
               <p className="text-xs text-gray-500 mt-1">Loans</p>
             </div>
             <div className="bg-gray-50 rounded-2xl p-3 text-center">
               <div className="flex items-center justify-center">
                 <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                <p className="text-2xl font-bold text-gray-800">{user?.rating}</p>
+                <p className="text-2xl font-bold text-gray-800">{userData?.rating?.toFixed(1) || '5.0'}</p>
               </div>
               <p className="text-xs text-gray-500 mt-1">Rating</p>
             </div>
@@ -208,40 +371,22 @@ const App = () => {
                 <div key={request.id} className="bg-white rounded-2xl shadow-sm p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800 text-lg">{request.item}</h4>
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {request.distance} away
-                      </div>
+                      <h4 className="font-semibold text-gray-800 text-lg">{request.itemName}</h4>
+                      <p className="text-sm text-gray-500 mt-1">{request.description || 'No description'}</p>
                     </div>
                     <div className="text-right">
                       <div className="bg-blue-50 rounded-xl px-3 py-1">
-                        <p className="text-blue-600 font-semibold text-sm">+{request.credits}</p>
+                        <p className="text-blue-600 font-semibold text-sm">Points</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full mr-3 flex items-center justify-center">
-                        <User className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-800 text-sm">{request.user}</p>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Star className="w-3 h-3 text-yellow-400 mr-1" />
-                          {request.rating} • {request.time}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={() => handleAcceptRequest(request.id)}
-                      className="bg-blue-500 text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-blue-600 transition"
-                    >
-                      Accept
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleAcceptRequest(request.id)}
+                    className="w-full bg-blue-500 text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-blue-600 transition"
+                  >
+                    Accept Request
+                  </button>
                 </div>
               ))
             )}
@@ -477,6 +622,15 @@ const App = () => {
   };
 
   const ProfilePage = () => {
+    const handleLogout = async () => {
+      try {
+        await signOut(auth);
+        setCurrentPage('home');
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
+    };
+
     return (
       <div className="pb-20 bg-gray-50 min-h-screen">
         <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-b-3xl shadow-sm p-6 mb-6 text-white">
@@ -485,21 +639,18 @@ const App = () => {
               <User className="w-10 h-10 text-blue-500" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">{user?.name}</h2>
-              <div className="flex items-center mt-1">
-                <Star className="w-4 h-4 text-yellow-300 mr-1" />
-                <span className="text-sm">{user?.rating} rating</span>
-              </div>
+              <h2 className="text-2xl font-bold">{userData?.name}</h2>
+              <p className="text-sm opacity-90">{user?.email}</p>
             </div>
           </div>
           
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
-              <p className="text-2xl font-bold">{user?.credits}</p>
+              <p className="text-2xl font-bold">{userData?.credits || 0}</p>
               <p className="text-xs mt-1 opacity-90">Credits</p>
             </div>
             <div className="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
-              <p className="text-2xl font-bold">{user?.loansCompleted}</p>
+              <p className="text-2xl font-bold">{userData?.loansCompleted || 0}</p>
               <p className="text-xs mt-1 opacity-90">Completed</p>
             </div>
             <div className="bg-white bg-opacity-20 rounded-2xl p-3 text-center">
@@ -510,27 +661,8 @@ const App = () => {
         </div>
 
         <div className="px-4 space-y-3">
-          <button className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between hover:bg-gray-50 transition">
-            <span className="font-semibold text-gray-800">Edit Profile</span>
-            <span className="text-gray-400 text-xl">›</span>
-          </button>
-          <button className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between hover:bg-gray-50 transition">
-            <span className="font-semibold text-gray-800">Loan History</span>
-            <span className="text-gray-400 text-xl">›</span>
-          </button>
-          <button className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between hover:bg-gray-50 transition">
-            <span className="font-semibold text-gray-800">Payment Methods</span>
-            <span className="text-gray-400 text-xl">›</span>
-          </button>
-          <button className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between hover:bg-gray-50 transition">
-            <span className="font-semibold text-gray-800">Settings</span>
-            <span className="text-gray-400 text-xl">›</span>
-          </button>
           <button 
-            onClick={() => {
-              setUser(null);
-              setCurrentPage('home');
-            }}
+            onClick={handleLogout}
             className="w-full bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between hover:bg-red-50 transition"
           >
             <span className="font-semibold text-red-600">Log Out</span>
@@ -576,34 +708,38 @@ const App = () => {
 
   const CreateRequestButton = () => {
     const [showCreateForm, setShowCreateForm] = useState(false);
-    const [newRequest, setNewRequest] = useState({ item: '', description: '' });
+    const [newRequest, setNewRequest] = useState({ itemName: '', description: '' });
 
-    const handleCreateRequest = () => {
-      if (!newRequest.item) {
+    const handleCreateRequest = async () => {
+      if (!newRequest.itemName) {
         alert('Please enter an item name');
         return;
       }
       
-      const request = {
-        id: Date.now(),
-        user: user.name,
-        item: newRequest.item,
-        distance: '0.0 mi',
-        rating: user.rating,
-        credits: 10,
-        time: 'Just now',
-        status: 'pending'
-      };
-      
-      setMyRequests([...myRequests, request]);
-      setNotifications([...notifications, { 
-        id: Date.now(), 
-        message: `Your request for ${newRequest.item} has been posted`,
-        time: 'Just now'
-      }]);
-      
-      setNewRequest({ item: '', description: '' });
-      setShowCreateForm(false);
+      try {
+        // Add request to Firestore
+        // Cloud Functions will automatically find matches!
+        await addDoc(collection(db, 'requests'), {
+          requesterId: user.uid,
+          itemName: newRequest.itemName,
+          description: newRequest.description,
+          status: 'pending',
+          location: {
+            // TODO: Get actual user location
+            lat: 40.7128,
+            lng: -74.0060
+          },
+          maxDistance: 5, // miles
+          createdAt: serverTimestamp()
+        });
+        
+        setNewRequest({ itemName: '', description: '' });
+        setShowCreateForm(false);
+        alert('Request posted! Looking for matches...');
+      } catch (error) {
+        console.error('Error creating request:', error);
+        alert('Failed to create request. Please try again.');
+      }
     };
 
     return (
@@ -623,8 +759,8 @@ const App = () => {
                 <input
                   type="text"
                   placeholder="What do you need?"
-                  value={newRequest.item}
-                  onChange={(e) => setNewRequest({...newRequest, item: e.target.value})}
+                  value={newRequest.itemName}
+                  onChange={(e) => setNewRequest({...newRequest, itemName: e.target.value})}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
                 <textarea
@@ -655,19 +791,30 @@ const App = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl font-bold text-blue-500 mb-2">Loop</div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return <LoginPage />;
   }
 
   return (
-    <div className="max-w-lg mx-auto bg-white min-h-screen relative" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+    <div className="max-w-lg mx-auto bg-white min-h-screen relative">
       {currentPage === 'home' && <HomePage />}
       {currentPage === 'map' && <MapPage />}
       {currentPage === 'loans' && <ActiveLoansPage />}
       {currentPage === 'notifications' && <NotificationsPage />}
       {currentPage === 'profile' && <ProfilePage />}
       
-      {currentPage !== 'profile' && <CreateRequestButton />}
+      {currentPage === 'home' && <CreateRequestButton />}
       <NavigationBar />
     </div>
   );
