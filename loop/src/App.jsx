@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Bell, Plus, User, Home, Search, Star, Clock, CheckCircle, XCircle, MessageCircle } from 'lucide-react';
+import { MapPin, Bell, User, Home, Search, Star, Clock, CheckCircle, XCircle, MessageCircle } from 'lucide-react';
+import PlusEmbedded from './assets/icons/PlusEmbedded';
+import MapboxMap from './components/MapboxMap';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
@@ -99,16 +101,29 @@ const App = () => {
   };
 
   const MapPage = () => {
-    return (
-      <div className="h-screen bg-gray-100 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100 flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-600">Interactive map view</p>
-            <p className="text-sm text-gray-500 mt-2">See nearby requests and items</p>
+    // Read Mapbox token from environment (Vite). Do NOT hard-code tokens into source.
+    // Add a .env.local with VITE_MAPBOX_TOKEN=your_token and restart dev server.
+  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+  // Read optional custom style from env. Use your style id like:
+  // VITE_MAPBOX_STYLE=mapbox://styles/katet06/cmh6pfpuc000l01qnem9n42ai
+  const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12';
+
+    if (!MAPBOX_TOKEN) {
+      return (
+        <div className="p-6">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <p className="text-yellow-700 font-medium">Mapbox token missing</p>
+            <p className="text-sm text-yellow-700">Set <code>VITE_MAPBOX_TOKEN</code> in <code>.env.local</code> (do not commit) and restart the dev server.</p>
           </div>
         </div>
-        
+      );
+    }
+
+    return (
+      <div className="h-screen bg-gray-100 relative">
+        {/* Map container component; MapboxMap handles initialization */}
+  <MapboxMap token={MAPBOX_TOKEN} style={MAPBOX_STYLE} center={[-74.5, 40]} zoom={9} />
+
         <div className="absolute top-4 left-4 right-4">
           <div className="bg-white rounded-2xl shadow-lg p-3 flex items-center">
             <Search className="w-5 h-5 text-gray-400 mr-2" />
@@ -611,8 +626,9 @@ const App = () => {
         <button 
           onClick={() => setShowCreateForm(true)}
           className="fixed bottom-24 right-4 bg-blue-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition z-30"
+          aria-label="Create request"
         >
-          <Plus className="w-6 h-6" />
+          <PlusEmbedded className="w-6 h-6" />
         </button>
 
         {showCreateForm && (
