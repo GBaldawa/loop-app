@@ -19,9 +19,12 @@ const LoopApp = () => {
     email: 'alex@university.edu',
     phone: '(555) 123-4567',
     rating: 4.9,
-    totalRatings: 23,
-    availableItems: ['USB-C to USB-C Charger']
+    totalRatings: 23
   });
+
+  // Track available items
+  const [availableItems, setAvailableItems] = useState(['USB-C to USB-C Charger']);
+  const [newItem, setNewItem] = useState('');
 
   // HARDCODED: Would fetch from API endpoint /api/requests
   const [requests, setRequests] = useState([
@@ -36,6 +39,9 @@ const LoopApp = () => {
 
   // HARDCODED: Would fetch from API endpoint /api/loanings
   const [loanings, setLoanings] = useState([]);
+  
+  // State for entering meetup codes
+  const [codeInput, setCodeInput] = useState({});
 
   // HARDCODED: Would fetch from API endpoint /api/notifications
   const [notificationsList, setNotificationsList] = useState([
@@ -75,7 +81,8 @@ const LoopApp = () => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
-    const meetupCode = generateMeetupCode();
+    const pickupCode = generateMeetupCode();
+    const returnCode = generateMeetupCode();
     
     // Add to my loanings
     const newLoaning = {
@@ -85,23 +92,33 @@ const LoopApp = () => {
       borrowerId: request.userId,
       pickupLocation: request.location,
       time: request.time,
-      status: 'pending',
-      meetupCode: meetupCode
+      status: 'pending_pickup',
+      pickupCode: pickupCode,
+      returnCode: returnCode,
+      pickupConfirmed: false,
+      returnConfirmed: false
     };
     setLoanings([...loanings, newLoaning]);
 
+    // Add to borrower's active requests (simulated)
+    const newMyRequest = {
+      id: Date.now(),
+      item: request.item,
+      lender: currentUser.name,
+      lenderId: currentUser.id,
+      location: request.location,
+      time: request.time,
+      pickupCode: pickupCode,
+      returnCode: returnCode,
+      status: 'pending_pickup'
+    };
+    setMyRequests([...myRequests, newMyRequest]);
+
     // Remove from available requests
     setRequests(requests.filter(r => r.id !== requestId));
-
-    // Add notification to borrower (simulated)
-    // HARDCODED: Would be sent via backend to the borrower
     
-    // Show success message (could add toast notification)
-    alert(`Request accepted! Your meetup code is ${meetupCode}`);
-
-    // Earn credits
-    // HARDCODED: Would be calculated by backend
-    setUserCredits(userCredits + 5);
+    // Show success message
+    alert(`Request accepted! Your pickup code is ${pickupCode}\nYour return code is ${returnCode}`);
 
     setCurrentPage('loaning');
   };
@@ -123,10 +140,13 @@ const LoopApp = () => {
       time: formData.time,
       distance: 0,
       rating: currentUser.rating,
-      status: 'pending',
+      status: 'active',
       category: 'other',
       details: formData.details
     };
+    
+    // Add to requests list
+    setRequests([...requests, newRequest]);
 
     // Reset form
     setFormData({
@@ -152,18 +172,62 @@ const LoopApp = () => {
     setCurrentPage('requests');
   };
 
-  // Confirm pickup
-  const handleConfirmPickup = (loaningId) => {
-    // HARDCODED: Would call API endpoint POST /api/loanings/:id/confirm
+  // Confirm pickup with code verification (borrower side)
+  const handleBorrowerPickup = (requestId, enteredCode) => {
+    const request = myRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    if (enteredCode.toUpperCase() !== request.pickupCode) {
+      alert('Invalid code! Please check with your lender.');
+      return;
+    }
+
+    // Update request status
+    setMyRequests(myRequests.map(r => 
+      r.id === requestId ? { ...r, status: 'picked_up' } : r
+    ));
+
+    alert('Pickup confirmed! Remember to return the item.');
+    setCodeInput({ ...codeInput, [requestId]: '' });
+  };
+
+  // Confirm return with code verification (borrower side)
+  const handleBorrowerReturn = (requestId, enteredCode) => {
+    const request = myRequests.find(r => r.id === requestId);
+    if (!request) return;
+
+    if (enteredCode.toUpperCase() !== request.returnCode) {
+      alert('Invalid code! Please check with your lender.');
+      return;
+    }
+
+    // Update request status to completed
+    setMyRequests(myRequests.map(r => 
+      r.id === requestId ? { ...r, status: 'completed' } : r
+    ));
+
+    alert('Item returned successfully! Thank you.');
+    setCodeInput({ ...codeInput, [requestId]: '' });
+  };
+
+  // Lender confirms pickup (when borrower shows them the code)
+  const handleLenderConfirmPickup = (loaningId) => {
+    setLoanings(loanings.map(l => 
+      l.id === loaningId ? { ...l, status: 'picked_up', pickupConfirmed: true } : l
+    ));
+    alert('Pickup confirmed!');
+  };
+
+  // Lender confirms return (when borrower returns and shows code)
+  const handleLenderConfirmReturn = (loaningId) => {
     const loaning = loanings.find(l => l.id === loaningId);
     if (!loaning) return;
 
-    // Update loaning status
     setLoanings(loanings.map(l => 
-      l.id === loaningId ? { ...l, status: 'completed' } : l
+      l.id === loaningId ? { ...l, status: 'completed', returnConfirmed: true } : l
     ));
 
-    // Award credits
+    // Award credits for completed loan
     const creditsEarned = 5;
     setUserCredits(userCredits + creditsEarned);
 
@@ -179,7 +243,7 @@ const LoopApp = () => {
     setNotificationsList([newNotification, ...notificationsList]);
     setNotifications(notifications + 1);
 
-    alert(`Pickup confirmed! You earned ${creditsEarned} credits.`);
+    alert(`Return confirmed! You earned ${creditsEarned} credits.`);
   };
 
   // Cancel loaning
@@ -201,6 +265,22 @@ const LoopApp = () => {
 
     alert('Profile updated successfully!');
     setCurrentPage('profile');
+  };
+
+  // Add new item to available items
+  const handleAddItem = () => {
+    if (!newItem.trim()) {
+      alert('Please enter an item name');
+      return;
+    }
+    setAvailableItems([...availableItems, newItem.trim()]);
+    setNewItem('');
+    alert('Item added successfully!');
+  };
+
+  // Remove item from available items
+  const handleRemoveItem = (index) => {
+    setAvailableItems(availableItems.filter((_, i) => i !== index));
   };
 
   // Filter requests
@@ -228,7 +308,7 @@ const LoopApp = () => {
     let filtered = loanings;
 
     if (loaningFilter === 'active') {
-      filtered = filtered.filter(l => l.status === 'pending');
+      filtered = filtered.filter(l => l.status === 'pending_pickup' || l.status === 'picked_up');
     } else if (loaningFilter === 'finished') {
       filtered = filtered.filter(l => l.status === 'completed');
     }
@@ -367,22 +447,87 @@ const LoopApp = () => {
         {myRequests.length > 0 && (
           <div className="mt-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">My Active Requests</h2>
-            {myRequests.map(request => (
-              <div key={request.id} className="bg-green-50 border border-green-200 rounded-2xl p-4">
-                <div className="flex items-center gap-2 text-green-700 mb-2">
-                  <Check className="w-5 h-5" />
-                  <span className="font-medium">Request Accepted!</span>
+            <div className="space-y-4">
+              {myRequests.map(request => (
+                <div key={request.id} className={`border rounded-2xl p-4 ${
+                  request.status === 'completed' ? 'bg-gray-50 border-gray-200' : 'bg-green-50 border-green-200'
+                }`}>
+                  <div className="flex items-center gap-2 text-green-700 mb-2">
+                    {request.status === 'completed' ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <Check className="w-5 h-5" />
+                    )}
+                    <span className="font-medium">
+                      {request.status === 'completed' ? 'Completed' : 
+                       request.status === 'picked_up' ? 'Item Picked Up' : 
+                       'Request Accepted!'}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-800 mb-2">{request.item}</h3>
+                  <p className="text-sm text-gray-600 mb-1">Lender: {request.lender}</p>
+                  <p className="text-sm text-gray-600 mb-1">Location: {request.location}</p>
+                  <p className="text-sm text-gray-600 mb-3">Time: {request.time}</p>
+                  
+                  {request.status === 'pending_pickup' && (
+                    <div className="space-y-3">
+                      <div className="bg-white rounded-xl p-3 border border-green-200">
+                        <p className="text-xs text-gray-600 mb-1">Enter lender's pickup code:</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter code"
+                            value={codeInput[request.id] || ''}
+                            onChange={(e) => setCodeInput({ ...codeInput, [request.id]: e.target.value.toUpperCase() })}
+                            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-center font-bold text-lg"
+                            maxLength={4}
+                          />
+                          <button
+                            onClick={() => handleBorrowerPickup(request.id, codeInput[request.id] || '')}
+                            className="bg-green-600 text-white px-4 rounded-lg font-medium hover:bg-green-700"
+                          >
+                            Confirm
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {request.status === 'picked_up' && (
+                    <div className="space-y-3">
+                      <div className="bg-blue-50 rounded-xl p-3 border border-blue-200 mb-2">
+                        <p className="text-sm text-blue-700 font-medium">Remember to return the item!</p>
+                      </div>
+                      <div className="bg-white rounded-xl p-3 border border-green-200">
+                        <p className="text-xs text-gray-600 mb-1">Enter lender's return code:</p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter code"
+                            value={codeInput[`return-${request.id}`] || ''}
+                            onChange={(e) => setCodeInput({ ...codeInput, [`return-${request.id}`]: e.target.value.toUpperCase() })}
+                            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-center font-bold text-lg"
+                            maxLength={4}
+                          />
+                          <button
+                            onClick={() => handleBorrowerReturn(request.id, codeInput[`return-${request.id}`] || '')}
+                            className="bg-green-600 text-white px-4 rounded-lg font-medium hover:bg-green-700"
+                          >
+                            Return
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {request.status === 'completed' && (
+                    <div className="bg-white rounded-xl p-3 border border-gray-200">
+                      <p className="text-sm text-gray-600 text-center">✓ Transaction completed</p>
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-semibold text-gray-800 mb-2">{request.item}</h3>
-                <p className="text-sm text-gray-600 mb-1">Lender: {request.lender}</p>
-                <p className="text-sm text-gray-600 mb-1">Location: {request.location}</p>
-                <p className="text-sm text-gray-600 mb-3">Time: {request.time}</p>
-                <div className="bg-white rounded-xl p-3 border border-green-200">
-                  <p className="text-xs text-gray-600 mb-1">Meetup Code:</p>
-                  <p className="text-2xl font-bold text-center text-gray-800">{request.meetupCode}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
@@ -425,9 +570,13 @@ const LoopApp = () => {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-gray-800">{loan.item}</h3>
                 <span className={`text-xs px-3 py-1 rounded-full ${
-                  loan.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
+                  loan.status === 'pending_pickup' ? 'bg-yellow-100 text-yellow-700' : 
+                  loan.status === 'picked_up' ? 'bg-blue-100 text-blue-700' : 
+                  'bg-green-100 text-green-700'
                 }`}>
-                  {loan.status === 'pending' ? 'Pending Pickup' : 'Completed'}
+                  {loan.status === 'pending_pickup' ? 'Pending Pickup' : 
+                   loan.status === 'picked_up' ? 'Out on Loan' : 
+                   'Completed'}
                 </span>
               </div>
               <div className="space-y-2 mb-4">
@@ -435,25 +584,43 @@ const LoopApp = () => {
                 <p className="text-sm text-gray-600">Location: {loan.pickupLocation}</p>
                 <p className="text-sm text-gray-600">Time: {loan.time}</p>
               </div>
-              <div className="bg-indigo-50 rounded-xl p-3 mb-3">
-                <p className="text-xs text-gray-600 mb-1">Your Meetup Code:</p>
-                <p className="text-2xl font-bold text-center text-indigo-600">{loan.meetupCode}</p>
-              </div>
-              {loan.status === 'pending' && (
-                <div className="grid grid-cols-2 gap-2">
+              
+              {loan.status === 'pending_pickup' && (
+                <>
+                  <div className="bg-indigo-50 rounded-xl p-3 mb-3">
+                    <p className="text-xs text-gray-600 mb-1">Pickup Code (Share with borrower):</p>
+                    <p className="text-2xl font-bold text-center text-indigo-600">{loan.pickupCode}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => handleLenderConfirmPickup(loan.id)}
+                      className="bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-colors"
+                    >
+                      Confirm Pickup
+                    </button>
+                    <button 
+                      onClick={() => handleCancelLoaning(loan.id)}
+                      className="bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+              
+              {loan.status === 'picked_up' && (
+                <>
+                  <div className="bg-purple-50 rounded-xl p-3 mb-3">
+                    <p className="text-xs text-gray-600 mb-1">Return Code (Share with borrower):</p>
+                    <p className="text-2xl font-bold text-center text-purple-600">{loan.returnCode}</p>
+                  </div>
                   <button 
-                    onClick={() => handleConfirmPickup(loan.id)}
-                    className="bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-colors"
+                    onClick={() => handleLenderConfirmReturn(loan.id)}
+                    className="w-full bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-colors"
                   >
-                    Confirm Pickup
+                    Confirm Return
                   </button>
-                  <button 
-                    onClick={() => handleCancelLoaning(loan.id)}
-                    className="bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                </>
               )}
             </div>
           ))}
@@ -476,10 +643,10 @@ const LoopApp = () => {
   const MapPage = () => {
     // Read Mapbox token from environment (Vite). Do NOT hard-code tokens into source.
     // Add a .env.local with VITE_MAPBOX_TOKEN=your_token and restart dev server.
-  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-  // Read optional custom style from env. Use your style id like:
-  // VITE_MAPBOX_STYLE=mapbox://styles/katet06/cmh6pfpuc000l01qnem9n42ai
-  const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12';
+    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+    // Read optional custom style from env. Use your style id like:
+    // VITE_MAPBOX_STYLE=mapbox://styles/katet06/cmh6pfpuc000l01qnem9n42ai
+    const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12';
  
  
     if (!MAPBOX_TOKEN) {
@@ -497,7 +664,7 @@ const LoopApp = () => {
     return (
       <div className="h-screen bg-gray-100 relative">
         {/* Map container component; MapboxMap handles initialization */}
-  <MapboxMap token={MAPBOX_TOKEN} style={MAPBOX_STYLE} center={[-74.5, 40]} zoom={9} />
+        <MapboxMap token={MAPBOX_TOKEN} style={MAPBOX_STYLE} center={[-74.5, 40]} zoom={9} />
  
  
         <div className="absolute top-4 left-4 right-4">
@@ -557,16 +724,33 @@ const LoopApp = () => {
         <div className="bg-white border border-gray-200 rounded-2xl p-4">
           <h3 className="font-semibold text-gray-800 mb-3">Available Items</h3>
           <div className="space-y-2">
-            {currentUser.availableItems.map((item, idx) => (
+            {availableItems.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <span className="text-gray-700">{item}</span>
-                <button className="text-indigo-600 text-sm">Edit</button>
+                <button 
+                  onClick={() => handleRemoveItem(idx)}
+                  className="text-red-600 text-sm hover:text-red-700"
+                >
+                  Remove
+                </button>
               </div>
             ))}
           </div>
-          <button className="w-full mt-3 py-2 text-indigo-600 font-medium rounded-xl border-2 border-dashed border-gray-300">
-            + Add Item
-          </button>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="text"
+              placeholder="Enter item name"
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <button 
+              onClick={handleAddItem}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700"
+            >
+              Add
+            </button>
+          </div>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-2xl p-4">
@@ -713,9 +897,8 @@ const LoopApp = () => {
             type="text"
             placeholder="e.g., iPhone Charger"
             value={formData.item}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, item: e.target.value }))
-            }
+            onChange={(e) => setFormData({ ...formData, item: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -723,33 +906,31 @@ const LoopApp = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Location</label>
           <input
             type="text"
-            placeholder="Location"
+            placeholder="e.g., Library 2nd Floor"
             value={formData.location}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, location: e.target.value }))
-            }
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Time Window</label>
           <input
-            type="time"
+            type="text"
+            placeholder="e.g., 2-4 pm"
             value={formData.time}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, time: e.target.value }))
-            }
+            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details (optional)</label>
           <textarea
-            placeholder="Details"
+            placeholder="Any specific details about your request..."
             value={formData.details}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, details: e.target.value }))
-            }
+            onChange={(e) => setFormData({ ...formData, details: e.target.value })}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 h-24 resize-none"
           />
         </div>
 
