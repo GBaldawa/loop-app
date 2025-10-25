@@ -1,4 +1,8 @@
-/* Existing animation */
+/* ===============================
+   Global Styles + Page Layout Fix
+   =============================== */
+
+/* Animation */
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -25,22 +29,56 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
-/* Card hover effects */
-.card-hover {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+/* Base Layout + Global Reset */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  background-color: #f9f9fb;
+  font-family: "Inter", sans-serif;
+  color: #1f1f1f;
+  scroll-behavior: smooth;
 }
 
-/* Make sections breathe more */
-section,
-div[class*="container"] {
-  padding: 20px 24px;
+/* === GLOBAL PAGE PADDING FIX === */
+main, 
+section, 
+.page-content, 
+.content-wrapper, 
+.main-container, 
+div[class*="container"],
+#root > div {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 6rem; /* space for fixed nav */
+}
+
+/* For larger screens, center and widen a bit */
+@media (min-width: 768px) {
+  main, 
+  section, 
+  .page-content, 
+  .content-wrapper, 
+  .main-container, 
+  div[class*="container"],
+  #root > div {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
 /* Space out cards/lists */
 .card-hover {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   padding: 18px 20px;
-  margin: 14px 0;
+  margin: 16px 0;
   border-radius: 12px;
+  background: #fff;
 }
 
 .card-hover:hover {
@@ -53,17 +91,30 @@ div[class*="container"] {
   padding: 16px 20px;
   margin-bottom: 14px;
   border-radius: 10px;
+  background: #fff;
 }
 
 /* Buttons */
 button {
   padding: 10px 18px;
   border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+button.primary {
+  background-color: #4a3aff;
+  color: white;
+}
+
+button.primary:hover {
+  background-color: #3a2ee6;
 }
 
 /* Navbar */
 .navbar {
-  padding: 12px 0;
+  padding: 12px 24px;
 }
 
 /* Text and icon spacing */
@@ -71,6 +122,7 @@ button {
   margin-left: 6px;
 }
 
+/* Typography */
 h1, h2, h3, h4, h5, h6 {
   margin-bottom: 10px;
 }
@@ -85,10 +137,20 @@ p {
   padding: 14px 18px;
   margin: 10px 0;
   border-radius: 10px;
+  background: #fff;
 }
 
 /* Input spacing */
 input, textarea {
   padding: 10px 14px;
   margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure bottom nav doesn’t overlap */
+body {
+  padding-bottom: 80px;
 }
