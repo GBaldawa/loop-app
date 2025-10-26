@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 import { MapPin, Home, Bell, User, Plus, Search, Star, Clock, Check, X, CheckCircle, XCircle, MessageCircle, Edit, Trash2 } from 'lucide-react';
@@ -55,6 +55,10 @@ const LoopApp = () => {
     card: '',
     locationServices: true
   });
+
+  // refs to keep input focus stable and avoid one-char typing issues
+  const requestsSearchRef = useRef(null);
+  const addItemInputRef = useRef(null);
 
   const generateMeetupCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -251,6 +255,21 @@ const LoopApp = () => {
     }
   }, [currentPage]);
 
+  // Focus the requests search input when on the Requests page
+  useEffect(() => {
+    if (currentPage === 'requests' && requestsSearchRef.current) {
+      requestsSearchRef.current.focus();
+    }
+  }, [currentPage]);
+
+  // Focus the add-item input when the modal opens
+  useEffect(() => {
+    if (showAddItemModal && addItemInputRef.current) {
+      // small timeout to ensure modal DOM is mounted
+      setTimeout(() => addItemInputRef.current.focus(), 0);
+    }
+  }, [showAddItemModal]);
+
   const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
@@ -309,15 +328,18 @@ const LoopApp = () => {
           </div>
         </div>
 
-        <div className="relative section-content">
-          <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search for items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-10"
-          />
+        <div className="section-content">
+          <div className="bg-white rounded-2xl shadow-lg p-3 flex items-center">
+            <Search className="w-5 h-5 text-gray-400 mr-2" />
+            <input
+              ref={requestsSearchRef}
+              type="text"
+              placeholder="Search for items..."
+              value={searchQuery}
+              onInput={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 outline-none text-sm border-none"
+            />
+          </div>
         </div>
 
         <div className="flex gap-2 section-content overflow-x-auto pb-2">
@@ -630,13 +652,16 @@ const LoopApp = () => {
       >
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
-          <input
-            type="text"
-            placeholder="e.g., MacBook Charger"
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            className="input-field"
-          />
+          <div className="bg-white rounded-2xl shadow-lg p-3 flex items-center">
+            <input
+              ref={addItemInputRef}
+              type="text"
+              placeholder="e.g., MacBook Charger"
+              value={newItemName}
+              onInput={(e) => setNewItemName(e.target.value)}
+              className="flex-1 outline-none text-sm border-none"
+            />
+          </div>
         </div>
         <div className="modal-buttons">
           <button 
