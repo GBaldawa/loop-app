@@ -1,4 +1,4 @@
-# Loop - Community Lending Platform
+# Loop - Community Lending App
 
 ## Overview
 
