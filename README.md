@@ -1,64 +1,224 @@
-# A community-driven item-sharing platform for college students
+# Loop - Community Lending Platform
 
-# Project Overview
+## Overview
 
-Forgetting items is something every person has experienced—especially college students learning independence and adulthood. What might seem like a minor inconvenience can sometimes have major consequences, like missing a job interview because you couldn’t afford to replace lost attire.
+Loop is a community-driven platform for lending and borrowing items locally. Built with React and Firebase, it connects neighbors who want to share resources, earn credits through lending, and build stronger communities. The platform features real-time matching between borrowers and lenders, a credit-based reward system, and secure meetup verification.
 
-Loop solves this by creating a supportive sharing network. It’s a platform where users can request items, loan out what they own, and manage pickups and returns securely using unique codes. The system includes ratings to build trust and accountability, along with a gamified point system that rewards participation with redeemable prizes—keeping real money out of the loop so it stays accessible to students of all income levels.
+## Features
 
-Loop’s main logic matches users who need an item with others who currently have it available, ensuring a smooth and efficient sharing experience. Ultimately, Loop fosters a culture of collaboration, trust, and sustainability across campuses and beyond.
+- Smart Item Matching: AI-powered system matches borrowing requests with available inventory
+- Credit System: Lenders earn points based on item value and loan duration
+- Real-time Notifications: Users receive instant updates on requests, acceptances, and completions
+- Location-based Search: Find items and lenders within a specified radius
+- Secure Meetup Verification: Unique codes verify item handoffs between users
+- Rating System: Build trust through user ratings and reviews after each transaction
+- Inventory Management: Add, edit, and track items available for lending
+- Loan Tracking: Monitor active loans, borrowed items, and transaction history
+- Damage Reporting: Built-in system for handling and documenting damaged items
 
-# Features
+## Tech Stack
 
-Item Requests & Loans – Easily request or offer items within your community.
+- Frontend: React 18 with Hooks
+- Routing: React Router v6
+- Styling: Material-UI and custom CSS
+- Backend: Firebase (Authentication, Firestore Database, Real-time Listeners)
+- Icons: Lucide React
+- Geolocation: Native Browser API
 
-Secure Pickups & Returns – Unique pickup and return codes ensure safe exchanges.
+## Installation
 
-Rating System – Builds accountability and user trust.
+### Clone the Repository
 
-Gamified Point System – Earn points for participation and redeem for prizes.
+```bash
+git clone https://github.com/yourusername/loop.git
+cd loop
+```
 
-Smart Matching – Automatically connects users when availability and need align.
+### Install Dependencies
 
-Community Growth – Designed to scale from campus networks to entire cities.
+```bash
+npm install
+```
 
-# Technical Challenges & Learning
+### Configure Firebase
 
-Developing Loop presented several real-world challenges that strengthened both our technical and teamwork abilities:
+Create a `src/config/firebase.js` file with your Firebase configuration:
 
-Integration & Version Control – Using GitHub for collaboration introduced merge conflicts and code loss early on, teaching us the importance of communication and version control best practices.
+```javascript
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
-New Technologies – Adapting quickly to Firebase for backend services and React for the frontend was an important learning experience.
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-auth-domain",
+  projectId: "your-project-id",
+  storageBucket: "your-storage-bucket",
+  messagingSenderId: "your-messaging-sender-id",
+  appId: "your-app-id"
+};
 
-Team Coordination – When a teammate’s computer broke, we had to restructure our workflow around shared resources and remote collaboration.
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+```
 
-Communication & Work Allocation – Managing shifting roles and responsibilities taught us how to stay organized and adaptable.
+### Set Up Firestore Security Rules
 
-These experiences provided valuable lessons in software engineering, collaboration, and problem-solving that we’ll carry into future projects.
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /items/{itemId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        resource.data.ownerId == request.auth.uid;
+    }
+    
+    match /requests/{requestId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        resource.data.requesterId == request.auth.uid;
+    }
+    
+    match /loans/{loanId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        (resource.data.loanerId == request.auth.uid || 
+         resource.data.borrowerId == request.auth.uid);
+    }
+    
+    match /notifications/{notifId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    match /ratings/{ratingId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+    }
+  }
+}
+```
 
-# Tech Stack
+### Start the Development Server
 
-Frontend: React
+```bash
+npm start
+```
 
-Backend: Firebase
+## Usage
 
-Version Control: GitHub
+### Getting Started
 
-Languages: JavaScript, HTML, CSS
+1. Create an account with your email and password
+2. Allow location access for distance-based features
+3. Choose to either request items as a borrower or add items as a lender
 
-Hosting: Firebase Hosting (optional)
+### Borrowing Workflow
 
-# Future Improvements
+1. Create a request specifying the item name, duration, and maximum distance
+2. Wait for a lender to accept your request
+3. Meet the lender and confirm pickup using the provided meetup code
+4. Return the item by the agreed-upon time
+5. Complete the loan and rate your experience with the lender
 
-Expand the community to include local neighborhoods and city-wide networks.
+### Lending Workflow
 
-Introduce AI-powered recommendations for item matches.
+1. Add items to your inventory with name, description, category, and value
+2. Receive notifications when users request items matching your inventory
+3. Accept requests that work for your schedule
+4. Meet the borrower and provide the meetup code for verification
+5. Confirm return of the item and rate your experience with the borrower
 
-Add chat functionality for seamless coordination.
+## Project Structure
 
-Improve the reward system with leaderboards and community challenges.
+```
+loop/
+├── src/
+│   ├── components/
+│   │   └── LoadingSpinner.jsx
+│   ├── config/
+│   │   └── firebase.js
+│   ├── hooks/
+│   │   ├── useNotifications.jsx
+│   │   └── useHapticFeedback.js
+│   ├── pages/
+│   │   ├── HomePage.jsx
+│   │   ├── ItemsPage.jsx
+│   │   ├── InventoryPage.jsx
+│   │   ├── LoaningPage.jsx
+│   │   ├── ProfilePage.jsx
+│   │   ├── AuthPage.jsx
+│   │   └── MapPage.jsx
+│   ├── App.jsx
+│   └── index.js
+├── public/
+├── package.json
+└── README.md
+```
 
-# Team & Collaboration
+## Database Schema
 
-Loop was developed through teamwork, perseverance, and shared learning.
-Every member contributed to design, implementation, and testing while learning to overcome technical and logistical barriers together.
+### Collections
+
+- users: User profiles, credits, ratings, and transaction counts
+- items: Items available for lending with owner information and availability status
+- requests: Borrowing requests with item details, location, and time requirements
+- loans: Active and completed loans tracking borrower, lender, and item details
+- notifications: Real-time user notifications for requests, acceptances, and completions
+- ratings: User ratings and reviews for completed transactions
+
+## Development Tools
+
+### Database Reset Function
+
+For development purposes, reset the database while preserving user accounts:
+
+```javascript
+// In browser console
+resetDatabase()
+```
+
+This will delete all items, requests, loans, and notifications.
+
+## Future Plans
+
+- Interactive Map: Add visual map interface with markers for items and requests
+- In-app Messaging: Direct communication between borrowers and lenders
+- Photo Uploads: Allow users to upload images of items
+- Push Notifications: Mobile push notifications for important updates
+- Advanced Search: Implement filters by category, distance, rating, and availability
+- Payment Integration: Handle damage deposits and insurance through the platform
+- Social Features: User profiles, followers, and community building features
+- Mobile App: Native iOS and Android applications using React Native
+- Multi-language Support: Internationalization for global communities
+- Item History: Track complete lifecycle and usage statistics for each item
+
+## Deployment
+
+### Firebase Hosting
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init hosting
+npm run build
+firebase deploy
+```
+
+## License
+
+This project is licensed under the MIT License.
+
+## Contributing
+
+Contributions are welcome. Please fork the repository and submit a pull request with your changes.
