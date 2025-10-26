@@ -3,7 +3,20 @@ import './App.css';
 
 import { MapPin, Home, Bell, User, Plus, Search, Star, Clock, Check, X, CheckCircle, XCircle, MessageCircle, Edit, Trash2 } from 'lucide-react';
 import MapboxMap from './components/MapboxMap';
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
 
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 className="modal-title">{title}</h2>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
 const LoopApp = () => {
   const [currentPage, setCurrentPage] = useState('login');
   const [notifications, setNotifications] = useState(3);
@@ -27,9 +40,9 @@ const LoopApp = () => {
   });
 
   const [requests, setRequests] = useState([
-    { id: 1, item: 'USB-C to USB-C Charger', user: 'Sarah M.', userId: 'user_2', location: 'Thompson Hall', time: '2-4 pm', distance: 0.3, rating: 4.8, status: 'active', category: 'chargers' },
-    { id: 2, item: 'iPhone Charger', user: 'Mike T.', userId: 'user_3', location: 'Student Center', time: '3-6 pm', distance: 0.5, rating: 4.9, status: 'active', category: 'chargers' },
-    { id: 3, item: 'Laptop Charger (HP)', user: 'Emma K.', userId: 'user_4', location: 'Library', time: '1-3 pm', distance: 0.2, rating: 5.0, status: 'active', category: 'chargers' },
+    { id: 1, item: 'USB-C to USB-C Charger', user: 'Sarah M.', userId: 'user_2', location: 'Thompson Hall', time: '2-4 pm', distance: 0.3, rating: 4.8, status: 'active', category: 'matches' },
+    { id: 2, item: 'iPhone Charger', user: 'Mike T.', userId: 'user_3', location: 'Student Center', time: '3-6 pm', distance: 0.5, rating: 4.9, status: 'active', category: 'matches' },
+    { id: 3, item: 'Laptop Charger (HP)', user: 'Emma K.', userId: 'user_4', location: 'Library', time: '1-3 pm', distance: 0.2, rating: 5.0, status: 'active', category: 'matches' },
     { id: 4, item: 'Textbook - Biology 101', user: 'John D.', userId: 'user_5', location: 'Science Building', time: '10-12 pm', distance: 0.4, rating: 4.7, status: 'active', category: 'books' }
   ]);
 
@@ -92,7 +105,7 @@ const LoopApp = () => {
     if (!formData.item || !formData.location || !formData.time) {
       return;
     }
-
+  
     const newRequest = {
       id: Date.now(),
       item: formData.item,
@@ -102,30 +115,27 @@ const LoopApp = () => {
       time: formData.time,
       distance: 0,
       rating: currentUser.rating,
-      status: 'pending',
+      status: 'active',  // make it active so it appears
       category: 'other',
       details: formData.details
     };
-
+  
+    // Add to requests and myRequests
+    setRequests([newRequest, ...requests]);
+    setMyRequests([newRequest, ...myRequests]);
+  
+    // Clear form
     setFormData({
       item: '',
       location: '',
       time: '',
       details: ''
     });
-
-    const newNotification = {
-      id: Date.now(),
-      type: 'request_posted',
-      title: 'Request posted!',
-      message: `Your request for ${formData.item} is now live`,
-      time: 'Just now',
-      read: false
-    };
-    setNotificationsList([newNotification, ...notificationsList]);
-    setNotifications(notifications + 1);
+  
+    // Go back to Requests page
     setCurrentPage('requests');
   };
+  
 
   const handleConfirmPickup = (loaningId) => {
     setLoanings(loanings.map(l => 
@@ -224,8 +234,8 @@ const LoopApp = () => {
       );
     }
 
-    if (activeFilter === 'chargers') {
-      filtered = filtered.filter(r => r.category === 'chargers');
+    if (activeFilter === 'matches') {
+      filtered = filtered.filter(r => r.category === 'matches');
     } else if (activeFilter === 'near') {
       filtered = filtered.filter(r => r.distance <= 0.3);
     }
@@ -250,21 +260,6 @@ const LoopApp = () => {
       setNotifications(0);
     }
   }, [currentPage]);
-
-  const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2 className="modal-title">{title}</h2>
-          </div>
-          {children}
-        </div>
-      </div>
-    );
-  };
 
   const Navigation = () => (
     <div className="navigation">
@@ -328,10 +323,10 @@ const LoopApp = () => {
             All
           </button>
           <button 
-            onClick={() => setActiveFilter('chargers')}
-            className={`filter-pill ${activeFilter === 'chargers' ? 'active' : 'inactive'}`}
+            onClick={() => setActiveFilter('matches')}
+            className={`filter-pill ${activeFilter === 'matches' ? 'active' : 'inactive'}`}
           >
-            Chargers
+            My Matches
           </button>
           <button 
             onClick={() => setActiveFilter('near')}
@@ -389,26 +384,40 @@ const LoopApp = () => {
         </div>
 
         {myRequests.length > 0 && (
-          <div className="mt-6">
-            <h2 className="mb-3">My Active Requests</h2>
-            {myRequests.map(request => (
-              <div key={request.id} className="card bg-green-50 border-green-200">
-                <div className="flex items-center gap-2 text-green-700 mb-2">
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">My Active Requests</h2>
+          {myRequests.map(request => (
+            <div key={request.id} className="bg-green-100 border border-green-300 rounded-2xl p-4">
+              {/* Status Indicator */}
+              {request.status === 'accepted' ? (
+                <div className="flex items-center gap-2 text-green-600 mb-2">
                   <Check className="w-5 h-5" />
                   <span className="font-medium">Request Accepted!</span>
                 </div>
-                <h3 className="mb-2">{request.item}</h3>
-                <p className="text-sm text-gray-600 mb-1">Lender: {request.lender}</p>
-                <p className="text-sm text-gray-600 mb-1">Location: {request.location}</p>
-                <p className="text-sm text-gray-600 mb-3">Time: {request.time}</p>
-                <div className="meetup-code">
-                  <p className="meetup-code-label">Meetup Code:</p>
-                  <p className="meetup-code-value">{request.meetupCode}</p>
+              ) : (
+                <div className="flex items-center gap-2 text-gray-500 mb-2">
+                  <span className="font-medium">Pending Acceptance</span>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+
+              {/* Request Info */}
+              <h3 className="font-semibold text-gray-800 mb-2">{request.item}</h3>
+              <p className="text-sm text-gray-600 mb-1">Lender: {request.lender || 'TBD'}</p>
+              <p className="text-sm text-gray-600 mb-1">Location: {request.location}</p>
+              <p className="text-sm text-gray-600 mb-3">Time: {request.time}</p>
+
+              {/* Meetup Code */}
+              {request.status === 'accepted' && request.meetupCode && (
+                <div className="bg-white rounded-xl p-3 border border-green-300">
+                  <p className="text-xs text-gray-600 mb-1">Meetup Code:</p>
+                  <p className="text-2xl font-bold text-center text-gray-800">{request.meetupCode}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
 
         <button
           onClick={() => setCurrentPage('createRequest')}
@@ -813,7 +822,7 @@ const LoopApp = () => {
         ← Back
       </button>
       <h1 className="section-header">Create a Request</h1>
-
+  
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">What do you need?</label>
@@ -825,7 +834,7 @@ const LoopApp = () => {
             className="input-field"
           />
         </div>
-
+  
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Location</label>
           <input
@@ -836,7 +845,7 @@ const LoopApp = () => {
             className="input-field"
           />
         </div>
-
+  
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Time Window</label>
           <input
@@ -847,7 +856,7 @@ const LoopApp = () => {
             className="input-field"
           />
         </div>
-
+  
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details (optional)</label>
           <textarea
@@ -857,7 +866,7 @@ const LoopApp = () => {
             className="input-field"
           />
         </div>
-
+  
         <button 
           onClick={handleCreateRequest}
           className="btn-primary"
@@ -867,6 +876,7 @@ const LoopApp = () => {
       </div>
     </div>
   );
+  
 
   const LoginPage = () => (
     <div className="login-container">
