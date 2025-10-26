@@ -1,6 +1,6 @@
-A community-driven item-sharing platform for college students
+# A community-driven item-sharing platform for college students
 
-Project Overview
+# Project Overview
 
 Forgetting items is something every person has experienced—especially college students learning independence and adulthood. What might seem like a minor inconvenience can sometimes have major consequences, like missing a job interview because you couldn’t afford to replace lost attire.
 
@@ -8,7 +8,7 @@ Loop solves this by creating a supportive sharing network. It’s a platform whe
 
 Loop’s main logic matches users who need an item with others who currently have it available, ensuring a smooth and efficient sharing experience. Ultimately, Loop fosters a culture of collaboration, trust, and sustainability across campuses and beyond.
 
-Features
+# Features
 
 Item Requests & Loans – Easily request or offer items within your community.
 
@@ -22,7 +22,7 @@ Smart Matching – Automatically connects users when availability and need align
 
 Community Growth – Designed to scale from campus networks to entire cities.
 
-Technical Challenges & Learning
+# Technical Challenges & Learning
 
 Developing Loop presented several real-world challenges that strengthened both our technical and teamwork abilities:
 
@@ -36,7 +36,7 @@ Communication & Work Allocation – Managing shifting roles and responsibilities
 
 These experiences provided valuable lessons in software engineering, collaboration, and problem-solving that we’ll carry into future projects.
 
-Tech Stack
+# Tech Stack
 
 Frontend: React
 
@@ -48,7 +48,7 @@ Languages: JavaScript, HTML, CSS
 
 Hosting: Firebase Hosting (optional)
 
-Future Improvements
+# Future Improvements
 
 Expand the community to include local neighborhoods and city-wide networks.
 
@@ -58,7 +58,7 @@ Add chat functionality for seamless coordination.
 
 Improve the reward system with leaderboards and community challenges.
 
-Team & Collaboration
+# Team & Collaboration
 
 Loop was developed through teamwork, perseverance, and shared learning.
 Every member contributed to design, implementation, and testing while learning to overcome technical and logistical barriers together.
