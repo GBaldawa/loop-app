@@ -1,3 +1,4 @@
+import { useGeolocation } from './hooks/useGeolocation';
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
@@ -88,6 +89,17 @@ const LoopApp = () => {
     card: '',
     locationServices: true
   });
+
+const { location: userLocation, loading: locationLoading, error: locationError } = useGeolocation();
+const [currentLocation, setCurrentLocation] = useState(null);
+
+// Update current location when geolocation hook returns data
+useEffect(() => {
+  if (userLocation) {
+    setCurrentLocation(userLocation);
+    console.log('User location detected:', userLocation);
+  }
+}, [userLocation]);
 
   // Firebase authentication
   useEffect(() => {
@@ -596,8 +608,14 @@ const LoopApp = () => {
 
   // Create a new request
   const handleCreateRequest = async () => {
-    if (!formData.item || !formData.location || !formData.time) {
+    if (!formData.item || !formData.time) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    // Check for location
+    if (!currentLocation) {
+      alert('Please enable location services to create a request');
       return;
     }
 
@@ -606,20 +624,19 @@ const LoopApp = () => {
         requesterId: user.uid,
         itemName: formData.item,
         description: formData.details || '',
-        location: formData.location,
+        location: formData.location || 'Current Location',
         timeNeeded: formData.time,
         status: 'pending',
-        lat: 40.7128, // TODO: Get actual user location
-        lng: -74.0060,
+        lat: currentLocation.lat,  // ✅ AUTO LOCATION
+        lng: currentLocation.lng,  // ✅ AUTO LOCATION
         maxDistance: 5,
         createdAt: serverTimestamp()
       };
 
-      console.log('Creating request:', newRequest);
+      console.log('Creating request with location:', newRequest);
       const docRef = await addDoc(collection(db, 'requests'), newRequest);
       console.log('Request created with ID:', docRef.id);
 
-      // Reset form
       setFormData({
         item: '',
         location: '',
@@ -627,7 +644,7 @@ const LoopApp = () => {
         details: ''
       });
 
-      alert('Request posted successfully! Looking for matches...');
+      alert('Request posted successfully with your location!');
       setCurrentPage('requests');
     } catch (error) {
       console.error('Error creating request:', error);
@@ -965,64 +982,86 @@ const LoopApp = () => {
 
   // Map Page
   const MapPage = () => {
-    // Read Mapbox token from environment (Vite). Do NOT hard-code tokens into source.
-    // Add a .env.local with VITE_MAPBOX_TOKEN=your_token and restart dev server.
   const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-  // Read optional custom style from env. Use your style id like:
-  // VITE_MAPBOX_STYLE=mapbox://styles/katet06/cmh6pfpuc000l01qnem9n42ai
   const MAPBOX_STYLE = import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12';
- 
- 
-    if (!MAPBOX_TOKEN) {
-    return (
-        <div className="p-6">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <p className="text-yellow-700 font-medium">Mapbox token missing</p>
-            <p className="text-sm text-yellow-700">Set <code>VITE_MAPBOX_TOKEN</code> in <code>.env.local</code> (do not commit) and restart the dev server.</p>
-          </div>
-        </div>
-      );
-    }
- 
- 
-    return (
-      <div className="h-screen bg-gray-100 relative">
-        {/* Map container component; MapboxMap handles initialization */}
-  <MapboxMap token={MAPBOX_TOKEN} style={MAPBOX_STYLE} center={[-74.5, 40]} zoom={9} />
- 
-        
-        <div className="absolute top-4 left-4 right-4">
-          <div className="bg-white rounded-2xl shadow-lg p-3 flex items-center">
-            <Search className="w-5 h-5 text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search items or location..."
-              className="flex-1 outline-none text-sm"
-            />
-          </div>
-        </div>
 
- 
-        <div className="absolute bottom-24 left-4 right-4 space-y-2">
-          {requests.slice(0, 2).map(req => (
-            <div key={req.id} className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-800">{req.item}</h3>
-                <p className="text-sm text-gray-500">{req.user} • {req.distance}</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                  {req.rating}
-                </div>
-                <p className="text-xs text-blue-500 font-semibold">{req.credits} credits</p>
-              </div>
-            </div>
-          ))}
+  if (!MAPBOX_TOKEN) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <p className="text-yellow-700 font-medium">Mapbox token missing</p>
+          <p className="text-sm text-yellow-700">Set VITE_MAPBOX_TOKEN in .env.local</p>
         </div>
       </div>
     );
-  };
+  }
+
+  // Convert requests to markers
+  const requestMarkers = requests
+    .filter(r => r.lat && r.lng)
+    .map(r => ({
+      lat: r.lat,
+      lng: r.lng,
+      label: r.itemName
+    }));
+
+  return (
+    <div className="h-screen bg-gray-100 relative">
+      {/* Location status indicators */}
+      {locationLoading && (
+        <div className="absolute top-4 left-4 right-4 bg-blue-50 border border-blue-200 rounded-lg p-3 z-10">
+          <p className="text-blue-700 text-sm">📍 Getting your location...</p>
+        </div>
+      )}
+      
+      {locationError && (
+        <div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 z-10">
+          <p className="text-red-700 text-sm">⚠️ {locationError}</p>
+        </div>
+      )}
+
+      {/* Map with user location */}
+      <MapboxMap 
+        token={MAPBOX_TOKEN} 
+        style={MAPBOX_STYLE}
+        center={currentLocation ? [currentLocation.lng, currentLocation.lat] : [-74.5, 40]}
+        zoom={currentLocation ? 14 : 9}
+        userLocation={currentLocation}
+        markers={requestMarkers}
+      />
+      
+      {/* Search bar */}
+      <div className="absolute top-4 left-4 right-4">
+        <div className="bg-white rounded-2xl shadow-lg p-3 flex items-center">
+          <Search className="w-5 h-5 text-gray-400 mr-2" />
+          <input
+            type="text"
+            placeholder="Search items or location..."
+            className="flex-1 outline-none text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Request cards at bottom */}
+      <div className="absolute bottom-24 left-4 right-4 space-y-2">
+        {requests.slice(0, 2).map(req => (
+          <div key={req.id} className="bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-800">{req.itemName}</h3>
+              <p className="text-sm text-gray-500">{req.location}</p>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center text-sm text-gray-600">
+                <Star className="w-4 h-4 text-yellow-400 mr-1" />
+                {req.rating || '5.0'}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 
   // Profile Page
@@ -1224,68 +1263,104 @@ const LoopApp = () => {
 
   // Create Request Page
   const CreateRequestPage = () => (
-    <div className="pb-20 px-4 pt-4">
-      <button onClick={() => setCurrentPage('requests')} className="mb-6 text-indigo-600 flex items-center gap-2">
-        ← Back
-      </button>
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Create a Request</h1>
+  <div className="pb-20 px-4 pt-4">
+    <button onClick={() => setCurrentPage('requests')} className="mb-6 text-indigo-600 flex items-center gap-2">
+      ← Back
+    </button>
+    <h1 className="text-2xl font-semibold text-gray-800 mb-6">Create a Request</h1>
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">What do you need?</label>
-          <input
-            type="text"
-            placeholder="e.g., iPhone Charger"
-            value={formData.item}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, item: e.target.value }))
-            }
-          />
-                      </div>
-
-                      <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Location</label>
-          <input
-            type="text"
-            placeholder="Location"
-            value={formData.location}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, location: e.target.value }))
-            }
-          />
-                        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Time Window</label>
-          <input
-            type="time"
-            value={formData.time}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, time: e.target.value }))
-            }
-          />
-                      </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details (optional)</label>
-          <textarea
-            placeholder="Details"
-            value={formData.details}
-            onChange={(e) =>
-              setFormData(prev => ({ ...prev, details: e.target.value }))
-            }
-          />
-                    </div>
-                    
-                    <button
-          onClick={handleCreateRequest}
-          className="w-full bg-indigo-600 text-white py-4 rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-                    >
-          Post Request
-                    </button>
-        </div>
+    {/* Location Status Indicators */}
+    {locationLoading && (
+      <div className="mb-4 p-3 bg-blue-50 rounded-xl text-sm text-blue-700">
+        📍 Getting your location...
       </div>
-    );
+    )}
+    
+    {locationError && (
+      <div className="mb-4 p-3 bg-red-50 rounded-xl text-sm text-red-700">
+        ⚠️ {locationError}
+        <br />
+        <span className="text-xs">Please enable location services in your browser settings.</span>
+      </div>
+    )}
+
+    {currentLocation && (
+      <div className="mb-4 p-3 bg-green-50 rounded-xl">
+        <p className="text-sm text-green-700 font-medium">✅ Location detected</p>
+        <p className="text-xs text-green-600 mt-1">
+          Lat: {currentLocation.lat.toFixed(4)}, Lng: {currentLocation.lng.toFixed(4)}
+        </p>
+      </div>
+    )}
+
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">What do you need? *</label>
+        <input
+          type="text"
+          placeholder="e.g., iPhone Charger"
+          value={formData.item}
+          onChange={(e) => setFormData(prev => ({ ...prev, item: e.target.value }))}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Pickup Location (Optional)
+        </label>
+        <input
+          type="text"
+          placeholder="Using your current location"
+          value={formData.location}
+          onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {currentLocation 
+            ? '✓ Your current location will be used automatically' 
+            : 'Waiting for location permission...'}
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Time Window *</label>
+        <input
+          type="text"
+          placeholder="e.g., 2 hours, 1 day"
+          value={formData.time}
+          onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Additional Details (optional)</label>
+        <textarea
+          placeholder="Any specific requirements..."
+          value={formData.details}
+          onChange={(e) => setFormData(prev => ({ ...prev, details: e.target.value }))}
+          rows={3}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+      
+      <button
+        onClick={handleCreateRequest}
+        disabled={!currentLocation}
+        className={`w-full py-4 rounded-xl font-medium transition-colors ${
+          currentLocation 
+            ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        }`}
+      >
+        {currentLocation ? 'Post Request' : 'Waiting for location...'}
+      </button>
+    </div>
+  </div>
+);
+  //Create **`loop/.env.local`** (if it doesn't exist):
+  //VITE_MAPBOX_TOKEN= your_mapbox_token_here
 
   // Login Page
   const LoginPage = () => {
