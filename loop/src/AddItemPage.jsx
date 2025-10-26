@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, DollarSign, Tag, MapPin, Info, Check } from 'lucide-react';
-
+// WILL BE DELETED SOON!!!!!!!
 const AddItemPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);

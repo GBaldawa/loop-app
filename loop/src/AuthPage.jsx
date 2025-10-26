@@ -10,34 +10,30 @@ const AuthPage = ({ isLogin = false }) => {
     email: '',
     password: '',
   });
-  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // In a real app, you would handle authentication here
-    console.log('Form submitted:', formData);
-    // For demo purposes, navigate to home after successful auth
-    navigate('/');
-  };
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Form submitted:', formData);
+    alert(`${isSignup ? 'Signed up' : 'Logged in'} successfully!`);
+    navigate('/');
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button 
-          onClick={() => navigate(-1)}
-          style={styles.backButton}
-        >
+        <button onClick={() => navigate(-1)} style={styles.backButton}>
           <ArrowLeft size={24} color="#4B5563" />
         </button>
-        <h1 style={styles.title}>{isSignup ? 'Create Account' : 'Welcome Back'}</h1>
+        <h1 style={styles.title}>
+          {isSignup ? 'Create Account' : 'Welcome Back'}
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} style={styles.form}>
@@ -51,7 +47,7 @@ const AuthPage = ({ isLogin = false }) => {
               value={formData.name}
               onChange={handleChange}
               style={styles.input}
-              required={isSignup}
+              required
             />
           </div>
         )}
@@ -79,7 +75,6 @@ const AuthPage = ({ isLogin = false }) => {
             onChange={handleChange}
             style={{ ...styles.input, paddingRight: '2.5rem' }}
             required
-            minLength={6}
           />
           <button
             type="button"
@@ -96,7 +91,7 @@ const AuthPage = ({ isLogin = false }) => {
 
         {!isSignup && (
           <div style={styles.forgotPassword}>
-            <Link to="/forgot-password" style={styles.link}>
+            <Link to="#" style={styles.link}>
               Forgot Password?
             </Link>
           </div>
@@ -125,27 +120,24 @@ const AuthPage = ({ isLogin = false }) => {
       </div>
 
       <div style={styles.socialButtons}>
-        <button style={styles.socialButton}>
-          <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" 
-            alt="Google" 
-            style={styles.socialIcon} 
-          />
-        </button>
-        <button style={styles.socialButton}>
-          <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" 
-            alt="Facebook" 
-            style={styles.socialIcon} 
-          />
-        </button>
-        <button style={styles.socialButton}>
-          <img 
-            src="https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg" 
-            alt="GitHub" 
-            style={styles.socialIcon} 
-          />
-        </button>
+        {[
+          {
+            src: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg',
+            alt: 'Google',
+          },
+          {
+            src: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg',
+            alt: 'Facebook',
+          },
+          {
+            src: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg',
+            alt: 'GitHub',
+          },
+        ].map(({ src, alt }) => (
+          <button key={alt} style={styles.socialButton} type="button">
+            <img src={src} alt={alt} style={styles.socialIcon} />
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -174,9 +166,7 @@ const styles = {
     transform: 'translateY(-50%)',
     background: 'none',
     border: 'none',
-    padding: '0.5rem',
     cursor: 'pointer',
-    borderRadius: '0.5rem',
   },
   title: {
     fontSize: '1.875rem',
@@ -206,7 +196,6 @@ const styles = {
     color: '#111827',
     backgroundColor: '#F9FAFB',
     outline: 'none',
-    transition: 'all 0.2s',
   },
   passwordToggle: {
     position: 'absolute',
@@ -216,8 +205,6 @@ const styles = {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    padding: '0.25rem',
-    borderRadius: '0.25rem',
   },
   forgotPassword: {
     textAlign: 'right',
@@ -233,13 +220,12 @@ const styles = {
     width: '100%',
     padding: '0.875rem',
     backgroundColor: '#9333EA',
-    color: 'white',
+    color: '#fff',
     border: 'none',
     borderRadius: '0.75rem',
     fontSize: '1rem',
     fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.2s',
     marginBottom: '1.5rem',
   },
   switchAuth: {
@@ -256,7 +242,6 @@ const styles = {
     color: '#9333EA',
     fontWeight: '600',
     cursor: 'pointer',
-    padding: '0.25rem',
   },
   divider: {
     display: 'flex',
@@ -268,13 +253,11 @@ const styles = {
     color: '#9CA3AF',
     fontSize: '0.875rem',
     backgroundColor: '#fff',
-    zIndex: 1,
   },
   socialButtons: {
     display: 'flex',
     justifyContent: 'center',
     gap: '1rem',
-    marginTop: '1rem',
   },
   socialButton: {
     width: '3rem',
@@ -286,7 +269,6 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    transition: 'all 0.2s',
   },
   socialIcon: {
     width: '1.5rem',
