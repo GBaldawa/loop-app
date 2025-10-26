@@ -20,7 +20,7 @@ const ItemCard = ({ item, onEdit, onDelete, onToggleStatus }) => {
       padding: '1rem',
       marginBottom: '1rem',
       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      borderLeft: `4px solid ${item.available ? '#10B981' : '#EF4444'}`,
+    //   borderLeft: `4px solid ${item.available ? '#10B981' : '#EF4444'}`,
     }}>
       <div style={{
         display: 'flex',

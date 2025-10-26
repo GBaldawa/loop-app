@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ItemCard = ({ item, onBorrow }) => {
@@ -159,34 +159,14 @@ const ItemsPage = () => {
 
   return (
     <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+      <h1 style={{
+        fontSize: '1.75rem',
+        fontWeight: 'bold',
+        color: '#1f2937',
         marginBottom: '1.5rem'
       }}>
-        <h1 style={{
-          fontSize: '1.75rem',
-          fontWeight: 'bold',
-          color: '#1f2937',
-          margin: 0
-        }}>Available Items</h1>
-        
-        <Link to="/add-item" style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          backgroundColor: '#9333ea',
-          color: 'white',
-          padding: '0.625rem 1.25rem',
-          borderRadius: '0.75rem',
-          textDecoration: 'none',
-          fontWeight: '600'
-        }}>
-          <Plus size={18} />
-          Add Item
-        </Link>
-      </div>
+        Available Items
+      </h1>
 
       {/* Search Bar */}
       <div style={{
