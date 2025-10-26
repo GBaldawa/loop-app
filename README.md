@@ -4,6 +4,10 @@
 
 Loop is a community-driven platform for lending and borrowing items locally. Built with React and Firebase, it connects neighbors who want to share resources, earn credits through lending, and build stronger communities. The platform features real-time matching between borrowers and lenders, a credit-based reward system, and secure meetup verification.
 
+## Demo Screenshots
+
+![Browsing Tab](browseTab.png)
+
 ## Features
 
 - Smart Item Matching: AI-powered system matches borrowing requests with available inventory
