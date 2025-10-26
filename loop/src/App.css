@@ -1,156 +1,442 @@
-/* ===============================
-   Global Styles + Page Layout Fix
-   =============================== */
-
-/* Animation */
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Smooth transitions */
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Focus states for accessibility */
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid #928fd5;
-  outline-offset: 2px;
-}
-
-/* Base Layout + Global Reset */
-html, body {
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #faf8ff;
+}
+
+.app-container {
+  max-width: 100%;
+  min-height: 100vh;
+}
+
+/* Input Styles */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="time"],
+textarea,
+.input-field {
   width: 100%;
-  background-color: #f9f9fb;
-  font-family: "Inter", sans-serif;
-  color: #1f1f1f;
-  scroll-behavior: smooth;
+  padding: 12px 16px;
+  border: 1.5px solid #e9d5ff;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1f2937;
+  background-color: #ffffff;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
 }
 
-/* === GLOBAL PAGE PADDING FIX === */
-main, 
-section, 
-.page-content, 
-.content-wrapper, 
-.main-container, 
-div[class*="container"],
-#root > div {
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-top: 1rem;
-  padding-bottom: 6rem; /* space for fixed nav */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+input[type="time"]:focus,
+textarea:focus,
+.input-field:focus {
+  border-color: #9484fc;
+  box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.1);
 }
 
-/* For larger screens, center and widen a bit */
+input::placeholder,
+textarea::placeholder {
+  color: #d1d5db;
+}
+
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* Button Styles */
+button {
+  cursor: pointer;
+  outline: none;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px 24px;
+  background-color: #a78bfa;
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #8b5cf6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 14px 24px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-success {
+  background-color: #86efac;
+  color: #166534;
+}
+
+.btn-success:hover {
+  background-color: #6ee7b7;
+}
+
+.btn-danger {
+  background-color: #fca5a5;
+  color: #991b1b;
+}
+
+.btn-danger:hover {
+  background-color: #f87171;
+}
+
+/* Card Styles */
+.card {
+  background-color: #ffffff;
+  border: 1px solid #f3e8ff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(168, 85, 247, 0.08);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.12);
+}
+
+/* Filter Pills */
+.filter-pill {
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.filter-pill.active {
+  background-color: #a78bfa;
+  color: #ffffff;
+}
+
+.filter-pill.inactive {
+  background-color: #faf5ff;
+  color: #3f33ea;
+  border: 1px solid #e9d5ff;
+}
+
+.filter-pill.inactive:hover {
+  background-color: #f3e8ff;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-completed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+/* Navigation */
+.navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border-top: 1px solid #f3e8ff;
+  padding: 8px 16px 12px;
+  z-index: 50;
+}
+
+.nav-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  padding: 8px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+  background-color: #faf5ff;
+}
+
+.nav-button.active .nav-icon {
+  color: #a78bfa;
+}
+
+.nav-button.inactive .nav-icon {
+  color: #d1d5db;
+}
+
+.nav-button.active .nav-label {
+  color: #a78bfa;
+  font-weight: 600;
+}
+
+.nav-button.inactive .nav-label {
+  color: #9ca3af;
+}
+
+/* Credits Display */
+.credits-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #faf5ff;
+  padding: 8px 16px;
+  border-radius: 24px;
+  border: 1px solid #e9d5ff;
+}
+
+/* Meetup Code */
+.meetup-code {
+  background-color: #faf5ff;
+  border: 1.5px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.meetup-code-label {
+  font-size: 12px;
+  color: #6732d9;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.meetup-code-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #4c3aed;
+  letter-spacing: 0.15em;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  background-color: #faf5ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* Login Page */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #a78bfa 0%, #c084fc 50%, #e879f9 100%);
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  background-color: #ffffff;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 10px 40px rgba(168, 85, 247, 0.3);
+}
+
+/* Floating Action Button */
+.fab {
+  position: fixed;
+  bottom: 88px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  background-color: #948bfa;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.4);
+  z-index: 40;
+}
+
+.fab:hover {
+  background-color: #8b5cf6;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+.fab:active {
+  transform: translateY(0);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Item List */
+.item-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: between;
+  padding: 12px;
+  background-color: #faf5ff;
+  border: 1px solid #dcd5ff;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+/* Responsive adjustments */
 @media (min-width: 768px) {
-  main, 
-  section, 
-  .page-content, 
-  .content-wrapper, 
-  .main-container, 
-  div[class*="container"],
-  #root > div {
-    max-width: 1200px;
+  .app-container {
+    max-width: 480px;
     margin: 0 auto;
-    padding-left: 2rem;
-    padding-right: 2rem;
   }
 }
 
-/* Space out cards/lists */
-.card-hover {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  padding: 18px 20px;
-  margin: 16px 0;
-  border-radius: 12px;
-  background: #fff;
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+::-webkit-scrollbar-track {
+  background: #faf5ff;
 }
 
-/* Notification cards */
-.notification-card {
-  padding: 16px 20px;
-  margin-bottom: 14px;
-  border-radius: 10px;
-  background: #fff;
+::-webkit-scrollbar-thumb {
+  background: #e9d5ff;
+  border-radius: 3px;
 }
 
-/* Buttons */
-button {
-  padding: 10px 18px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
+::-webkit-scrollbar-thumb:hover {
+  background: #8484fc;
 }
 
-button.primary {
-  background-color: #4a3aff;
-  color: white;
+/* Page Padding */
+.page-content {
+  padding: 16px;
+  padding-bottom: 88px;
 }
 
-button.primary:hover {
-  background-color: #3a2ee6;
+/* Section Spacing */
+.section-header {
+  margin-bottom: 16px;
 }
 
-/* Navbar */
-.navbar {
-  padding: 12px 24px;
-}
-
-/* Text and icon spacing */
-.icon-text {
-  margin-left: 6px;
+.section-content {
+  margin-bottom: 24px;
 }
 
 /* Typography */
-h1, h2, h3, h4, h5, h6 {
-  margin-bottom: 10px;
+h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
 }
 
-p {
-  margin-bottom: 8px;
-  line-height: 1.5;
+h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-/* Lists / request items */
-.request-item {
-  padding: 14px 18px;
-  margin: 10px 0;
-  border-radius: 10px;
-  background: #fff;
-}
-
-/* Input spacing */
-input, textarea {
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Ensure bottom nav doesn’t overlap */
-body {
-  padding-bottom: 80px;
+h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
 }
